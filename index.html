@@ -175,7 +175,6 @@
 <div id="conn-banner">Connection lost — trying to reconnect…</div>
 <div id="app"></div>
 
-<script src="./config.js"></script>
 <script>
 // ═══════════════════════════════════════════════════════════════════════════════
 // CONSTANTS
@@ -357,42 +356,8 @@ let S        = null;         // server state snapshot
 let localErr = '';           // error message to show in current screen
 let currentGuessPos = null;  // drag position before locking
 const pendingMsgs = [];      // outbound messages queued before socket opens
-let connectAttempts = 0;     // reconnect attempts while on connect screen
-let reconnectTimer = null;   // scheduled reconnect timer id
-
-function normalizeWsUrl(raw) {
-  const v = String(raw || '').trim();
-  if (!v) return '';
-  if (v.startsWith('ws://') || v.startsWith('wss://')) return v.replace(/\/+$/, '');
-  if (v.startsWith('http://')) return `ws://${v.slice('http://'.length)}`.replace(/\/+$/, '');
-  if (v.startsWith('https://')) return `wss://${v.slice('https://'.length)}`.replace(/\/+$/, '');
-  return '';
-}
-
-function isGitHubPagesHost() {
-  return /\.github\.io$/i.test(location.hostname);
-}
-
-function getConfiguredServerUrl() {
-  try {
-    const stored = normalizeWsUrl(localStorage.getItem('mindmeter_server_url'));
-    if (stored) return stored;
-  } catch (e) {}
-  const fromConfig = normalizeWsUrl(window.MINDMETER_CONFIG?.SERVER_URL || window.MINDMETER_SERVER_URL);
-  if (fromConfig) return fromConfig;
-  return '';
-}
-
-function setConfiguredServerUrl(url) {
-  const normalized = normalizeWsUrl(url);
-  if (!normalized) return false;
-  try { localStorage.setItem('mindmeter_server_url', normalized); } catch (e) {}
-  return true;
-}
 
 function wsEndpoint() {
-  const configured = getConfiguredServerUrl();
-  if (configured) return configured;
   const proto = location.protocol === 'https:' ? 'wss:' : 'ws:';
   return `${proto}//${location.host}`;
 }
@@ -410,7 +375,6 @@ function connectWS() {
   ws = new WebSocket(wsEndpoint());
 
   ws.onopen = () => {
-    connectAttempts = 0;
     document.getElementById('conn-banner').style.display = 'none';
     while (pendingMsgs.length && ws?.readyState === 1) {
       ws.send(JSON.stringify(pendingMsgs.shift()));
@@ -441,16 +405,9 @@ function connectWS() {
   };
 
   ws.onclose = () => {
-    connectAttempts++;
     if (S) document.getElementById('conn-banner').style.display = 'block';
-    if (!S) {
-      if (connectAttempts >= 4) {
-        localErr = `Unable to reach game server at ${wsEndpoint()}. If running locally, start it with: npm run start`;
-      }
-      render();
-    }
-    clearTimeout(reconnectTimer);
-    reconnectTimer = setTimeout(connectWS, 2000); // auto-reconnect
+    if (!S) render();
+    setTimeout(connectWS, 2000); // auto-reconnect
   };
 
   ws.onerror = () => {};
@@ -523,10 +480,6 @@ function render() {
 function renderConnect() {
   const app = document.getElementById('app');
   const isConnected = ws?.readyState === 1;
-  const showFailedState = !isConnected && connectAttempts >= 4;
-  const usingCustomServer = !!getConfiguredServerUrl();
-  const needsServerUrl = isGitHubPagesHost() && !usingCustomServer;
-  const serverHint = usingCustomServer ? getConfiguredServerUrl() : 'Same host';
   app.innerHTML = `
     <h1>MindMeter</h1>
     <p class="subtitle">A mind-reading party game · Each player uses their own device</p>
@@ -536,17 +489,7 @@ function renderConnect() {
       <input type="text" id="pname" placeholder="Enter your name" maxlength="20" autocomplete="off">
     </div>
 
-    <div class="card">
-      <div style="font-size:0.85rem;color:var(--dim);margin-bottom:10px">Game server URL (for GitHub Pages)</div>
-      <input type="text" id="server-url" placeholder="wss://your-server.onrender.com" autocomplete="off" value="${esc(getConfiguredServerUrl())}">
-      <div style="font-size:0.78rem;color:var(--dim);margin-top:8px">Current target: ${esc(serverHint)}</div>
-      <div class="row" style="margin-top:8px;gap:8px;justify-content:center">
-        <button class="btn btn-ghost btn-sm" type="button" onclick="saveServerUrl()">Save Server URL</button>
-        <button class="btn btn-ghost btn-sm" type="button" onclick="clearServerUrl()">Use Same Host</button>
-      </div>
-    </div>
-
-    <button class="btn btn-primary" onclick="doCreate()" ${(isConnected && !needsServerUrl) ? '' : 'disabled'}>Create Game</button>
+    <button class="btn btn-primary" onclick="doCreate()" ${isConnected ? '' : 'disabled'}>Create Game</button>
 
     <div class="divider">or join an existing game</div>
 
@@ -555,21 +498,14 @@ function renderConnect() {
       <input type="text" id="rcode" class="code-input" placeholder="A B C D" maxlength="4" autocomplete="off">
     </div>
 
-    <button class="btn btn-ghost" onclick="doJoin()" ${(isConnected && !needsServerUrl) ? '' : 'disabled'}>Join Game →</button>
+    <button class="btn btn-ghost" onclick="doJoin()" ${isConnected ? '' : 'disabled'}>Join Game →</button>
 
-    ${showFailedState
-      ? `<div class="center" style="color:var(--coral);font-size:0.82rem;margin-top:10px">Server unreachable</div>
-         <button class="btn btn-ghost btn-sm" style="margin:10px auto 0" onclick="retryConnect()">Retry Connection</button>`
-      : isConnected
+    ${isConnected
       ? `<div class="center" style="color:var(--teal);font-size:0.82rem;margin-top:10px">Connected</div>`
       : `<div class="loader-row"><span class="loader-dot" aria-hidden="true"></span><span>Connecting to game server…</span></div>`
     }
     <div class="err" id="conn-err">${esc(localErr)}</div>
   `;
-
-  if (needsServerUrl) {
-    showConnErr('GitHub Pages needs a hosted WebSocket server URL. Add one above, then click Save Server URL.');
-  }
 
   $('#pname').addEventListener('keydown', e => { if (e.key === 'Enter') { if ($('#rcode').value.trim()) doJoin(); else doCreate(); } });
   $('#rcode').addEventListener('keydown', e => { if (e.key === 'Enter') doJoin(); });
@@ -601,31 +537,6 @@ function showConnErr(msg) {
   const el = document.getElementById('conn-err');
   if (el) el.textContent = msg;
 }
-
-window.retryConnect = function() {
-  connectAttempts = 0;
-  localErr = '';
-  try { ws?.close(); } catch (e) {}
-  clearTimeout(reconnectTimer);
-  connectWS();
-  render();
-};
-
-window.saveServerUrl = function() {
-  const raw = document.getElementById('server-url')?.value || '';
-  if (!setConfiguredServerUrl(raw)) {
-    showConnErr('Enter a valid ws:// or wss:// server URL.');
-    return;
-  }
-  localErr = '';
-  window.retryConnect();
-};
-
-window.clearServerUrl = function() {
-  try { localStorage.removeItem('mindmeter_server_url'); } catch (e) {}
-  localErr = '';
-  window.retryConnect();
-};
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // LOBBY
