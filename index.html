@@ -343,9 +343,15 @@ let ws       = null;
 let S        = null;         // server state snapshot
 let localErr = '';           // error message to show in current screen
 let currentGuessPos = null;  // drag position before locking
+const pendingMsgs = [];      // outbound messages queued before socket opens
 
-function wsSend(msg) {
-  if (ws?.readyState === 1) ws.send(JSON.stringify(msg));
+function wsSend(msg, { queueIfClosed = false } = {}) {
+  if (ws?.readyState === 1) {
+    ws.send(JSON.stringify(msg));
+    return true;
+  }
+  if (queueIfClosed) pendingMsgs.push(msg);
+  return false;
 }
 
 function connectWS() {
@@ -354,9 +360,13 @@ function connectWS() {
 
   ws.onopen = () => {
     document.getElementById('conn-banner').style.display = 'none';
+    while (pendingMsgs.length && ws?.readyState === 1) {
+      ws.send(JSON.stringify(pendingMsgs.shift()));
+    }
     // Try to rejoin if we have stored credentials
     const stored = getStored();
     if (stored) wsSend({ type: 'JOIN_ROOM', code: stored.code, name: stored.name, playerId: stored.pid });
+    if (!S) render();
   };
 
   ws.onmessage = e => {
@@ -380,6 +390,7 @@ function connectWS() {
 
   ws.onclose = () => {
     if (S) document.getElementById('conn-banner').style.display = 'block';
+    if (!S) render();
     setTimeout(connectWS, 2000); // auto-reconnect
   };
 
@@ -452,6 +463,7 @@ function render() {
 
 function renderConnect() {
   const app = document.getElementById('app');
+  const isConnected = ws?.readyState === 1;
   app.innerHTML = `
     <h1>MindMeter</h1>
     <p class="subtitle">A mind-reading party game · Each player uses their own device</p>
@@ -461,7 +473,7 @@ function renderConnect() {
       <input type="text" id="pname" placeholder="Enter your name" maxlength="20" autocomplete="off">
     </div>
 
-    <button class="btn btn-primary" onclick="doCreate()">Create Game</button>
+    <button class="btn btn-primary" onclick="doCreate()" ${isConnected ? '' : 'disabled'}>Create Game</button>
 
     <div class="divider">or join an existing game</div>
 
@@ -470,8 +482,11 @@ function renderConnect() {
       <input type="text" id="rcode" class="code-input" placeholder="A B C D" maxlength="4" autocomplete="off">
     </div>
 
-    <button class="btn btn-ghost" onclick="doJoin()">Join Game →</button>
+    <button class="btn btn-ghost" onclick="doJoin()" ${isConnected ? '' : 'disabled'}>Join Game →</button>
 
+    <div class="center" style="color:${isConnected ? 'var(--teal)' : 'var(--dim)'};font-size:0.82rem;margin-top:10px">
+      ${isConnected ? 'Connected' : 'Connecting to game server…'}
+    </div>
     <div class="err" id="conn-err">${esc(localErr)}</div>
   `;
 
@@ -484,7 +499,9 @@ window.doCreate = function() {
   const name = $('#pname')?.value.trim();
   if (!name) { showConnErr('Enter your name first.'); return; }
   localErr = '';
-  wsSend({ type: 'CREATE_ROOM', name });
+  if (!wsSend({ type: 'CREATE_ROOM', name }, { queueIfClosed: true })) {
+    showConnErr('Connecting to server… your request will send automatically.');
+  }
 };
 
 window.doJoin = function() {
@@ -493,7 +510,9 @@ window.doJoin = function() {
   if (!name) { showConnErr('Enter your name first.'); return; }
   if (!code || code.length < 4) { showConnErr('Enter the 4-character room code.'); return; }
   localErr = '';
-  wsSend({ type: 'JOIN_ROOM', code, name });
+  if (!wsSend({ type: 'JOIN_ROOM', code, name }, { queueIfClosed: true })) {
+    showConnErr('Connecting to server… your request will send automatically.');
+  }
 };
 
 function showConnErr(msg) {
