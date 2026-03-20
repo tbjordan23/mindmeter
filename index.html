@@ -1,0 +1,931 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>Mind Meter</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:      #12101f;
+      --card:    rgba(255,255,255,0.05);
+      --border:  rgba(255,255,255,0.1);
+      --teal:    #4ecdc4;
+      --coral:   #ff6b6b;
+      --gold:    #ffd700;
+      --text:    #e8e8f0;
+      --dim:     #7a7a9a;
+    }
+
+    body {
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      background: var(--bg);
+      min-height: 100vh;
+      color: var(--text);
+      display: flex;
+      justify-content: center;
+    }
+
+    #app {
+      width: 100%;
+      max-width: 560px;
+      min-height: 100vh;
+      padding: 20px 16px 48px;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* ── typography ── */
+    h1 {
+      font-size: 2.8rem; font-weight: 900; text-align: center;
+      letter-spacing: 0.12em;
+      background: linear-gradient(135deg, var(--teal), #7b61ff, var(--coral));
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+      background-clip: text;
+      margin-bottom: 4px;
+    }
+    .subtitle    { text-align: center; color: var(--dim); font-size: 0.88rem; margin-bottom: 24px; }
+    .round-label { font-size: 0.75rem; color: var(--dim); text-transform: uppercase; letter-spacing: 0.2em; margin-bottom: 6px; text-align: center; }
+    .phase-title { font-size: 1.8rem; font-weight: 800; text-align: center; margin-bottom: 20px; }
+
+    /* ── cards ── */
+    .card { background: var(--card); border: 1px solid var(--border); border-radius: 16px; padding: 18px; margin-bottom: 14px; }
+
+    /* ── buttons ── */
+    .btn { display: block; width: 100%; padding: 14px 24px; border-radius: 50px; border: none; font-size: 1rem; font-weight: 700; cursor: pointer; transition: transform 0.15s, filter 0.15s; margin-top: 8px; letter-spacing: 0.04em; }
+    .btn:hover:not(:disabled)  { transform: translateY(-2px); filter: brightness(1.1); }
+    .btn:active:not(:disabled) { transform: translateY(0); }
+    .btn:disabled              { opacity: 0.4; cursor: not-allowed; }
+    .btn-primary  { background: linear-gradient(135deg, var(--teal), #2bb8af); color: #000; }
+    .btn-ghost    { background: rgba(255,255,255,0.07); color: var(--text); border: 1px solid var(--border); }
+    .btn-danger   { background: linear-gradient(135deg, #e05555, #c03030); color: #fff; }
+    .btn-sm       { width: auto; padding: 10px 18px; font-size: 0.88rem; margin-top: 0; }
+    .btn-icon     { width: auto; padding: 8px 14px; font-size: 0.8rem; margin-top: 0; }
+
+    /* ── inputs ── */
+    input[type="text"] {
+      background: rgba(255,255,255,0.05); border: 1px solid var(--border); border-radius: 10px;
+      color: var(--text); padding: 12px 14px; font-size: 1rem; width: 100%; outline: none;
+      transition: border-color 0.2s;
+    }
+    input[type="text"]:focus      { border-color: var(--teal); background: rgba(78,205,196,0.05); }
+    input[type="text"]::placeholder { color: var(--dim); }
+    input[type="text"].code-input  { font-size: 1.4rem; font-weight: 700; letter-spacing: 0.2em; text-align: center; text-transform: uppercase; }
+
+    /* ── layout ── */
+    .row    { display: flex; align-items: center; gap: 8px; }
+    .spacer { flex: 1; }
+    .center { text-align: center; }
+
+    /* ── player chips ── */
+    .player-chips { display: flex; flex-wrap: wrap; gap: 8px; }
+    .chip {
+      display: inline-flex; align-items: center; gap: 7px;
+      background: rgba(255,255,255,0.07); border-radius: 50px; padding: 6px 14px 6px 8px;
+      font-size: 0.9rem;
+    }
+    .chip.offline { opacity: 0.45; }
+    .dot { width: 12px; height: 12px; border-radius: 50%; flex-shrink: 0; }
+    .dot.pulse { animation: pulse 1.5s ease-in-out infinite; }
+    @keyframes pulse { 0%,100% { opacity:1; } 50% { opacity:0.3; } }
+
+    /* ── stepper ── */
+    .stepper { display: flex; align-items: center; gap: 12px; }
+    .step-btn { width: 36px; height: 36px; border-radius: 50%; background: rgba(255,255,255,0.1); border: 1px solid var(--border); color: var(--text); font-size: 1.2rem; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+    .step-btn:hover { background: rgba(255,255,255,0.18); }
+    .step-val { font-size: 1.2rem; font-weight: 700; min-width: 32px; text-align: center; }
+
+    /* ── room code display ── */
+    .room-code {
+      font-size: 3rem; font-weight: 900; letter-spacing: 0.3em; text-align: center;
+      color: var(--teal); font-family: 'Courier New', monospace;
+      padding: 12px 0 4px;
+    }
+    .room-code-label { font-size: 0.75rem; color: var(--dim); text-transform: uppercase; letter-spacing: 0.15em; text-align: center; margin-bottom: 6px; }
+
+    /* ── dial ── */
+    .dial-wrap { position: relative; width: 100%; cursor: crosshair; user-select: none; -webkit-user-select: none; touch-action: none; }
+    .dial-wrap svg { display: block; width: 100%; height: auto; }
+
+    /* ── spectrum labels ── */
+    .spectrum-row { display: flex; justify-content: space-between; margin-bottom: 8px; }
+    .spec-left  { font-weight: 700; color: #6aacff; font-size: 1rem; }
+    .spec-right { font-weight: 700; color: #ff8c69; font-size: 1rem; }
+
+    /* ── clue box ── */
+    .clue-box { background: rgba(255,215,0,0.08); border: 1px solid rgba(255,215,0,0.25); border-radius: 12px; padding: 14px 18px; text-align: center; margin-bottom: 14px; }
+    .clue-label { font-size: 0.72rem; color: var(--dim); text-transform: uppercase; letter-spacing: 0.15em; margin-bottom: 4px; }
+    .clue-text  { font-size: 2rem; font-weight: 900; color: var(--gold); letter-spacing: 0.04em; }
+
+    /* ── score rows ── */
+    .score-list { display: flex; flex-direction: column; gap: 8px; }
+    .score-row  { display: flex; align-items: center; gap: 10px; background: rgba(255,255,255,0.04); border-radius: 10px; padding: 10px 12px; }
+    .score-row .name       { flex: 1; font-weight: 600; font-size: 0.95rem; }
+    .score-row .pts-round  { font-size: 1.15rem; font-weight: 800; min-width: 44px; text-align: right; }
+    .score-row .pts-total  { font-size: 0.8rem; color: var(--dim); min-width: 60px; text-align: right; }
+
+    /* ── leaderboard ── */
+    .lb-row { display: flex; align-items: center; gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--border); }
+    .lb-row:last-child { border-bottom: none; }
+    .lb-rank  { width: 28px; font-size: 1.3rem; text-align: center; }
+    .lb-name  { flex: 1; font-weight: 600; }
+    .lb-score { font-size: 1.4rem; font-weight: 800; color: var(--gold); }
+
+    /* ── pos badge ── */
+    #pos-badge { text-align: center; font-size: 0.85rem; color: var(--dim); min-height: 20px; margin: 6px 0 10px; transition: color 0.2s; }
+    #pos-badge.active { color: var(--teal); font-weight: 600; }
+
+    /* ── progress bar ── */
+    .progress-wrap { background: rgba(255,255,255,0.08); border-radius: 50px; height: 8px; overflow: hidden; margin: 10px 0; }
+    .progress-fill { height: 100%; border-radius: 50px; background: linear-gradient(90deg, var(--teal), #7b61ff); transition: width 0.4s ease; }
+
+    /* ── waiting screen ── */
+    .waiting-card { text-align: center; padding: 32px 20px; }
+    .waiting-icon { font-size: 3rem; margin-bottom: 14px; }
+
+    /* ── connection banner ── */
+    #conn-banner { display: none; position: fixed; top: 0; left: 0; right: 0; background: #e05555; color: #fff; text-align: center; padding: 8px; font-size: 0.85rem; font-weight: 600; z-index: 999; }
+
+    /* ── err ── */
+    .err { color: var(--coral); font-size: 0.85rem; text-align: center; min-height: 20px; margin-top: 6px; }
+
+    /* ── OR divider ── */
+    .divider { display: flex; align-items: center; gap: 12px; margin: 16px 0; color: var(--dim); font-size: 0.85rem; }
+    .divider::before, .divider::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+
+    /* ── fade in ── */
+    @keyframes fadeUp { from { opacity:0; transform:translateY(10px); } to { opacity:1; transform:translateY(0); } }
+    .fade-in { animation: fadeUp 0.25s ease-out; }
+  </style>
+</head>
+<body>
+<div id="conn-banner">Connection lost — trying to reconnect…</div>
+<div id="app"></div>
+
+<script>
+// ═══════════════════════════════════════════════════════════════════════════════
+// CONSTANTS
+// ═══════════════════════════════════════════════════════════════════════════════
+
+const COLORS = ['#FF6B6B','#4ECDC4','#FFD93D','#7B61FF','#FF8C42','#A8E6CF','#F78FB3','#63CDDA'];
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// SVG DIAL
+// ═══════════════════════════════════════════════════════════════════════════════
+
+const VW = 500, VH = 270;
+const CX = 250, CY = 262, OR = 218, IR = 72;
+const NS = 'http://www.w3.org/2000/svg';
+
+function px(p)    { return (1 - p) * 180; }           // position 0–1 → angle in degrees
+function pt(r, d) { const a = d * Math.PI/180; return { x: CX + r*Math.cos(a), y: CY - r*Math.sin(a) }; }
+function f(n)     { return Math.round(n * 10) / 10; }
+
+function sector(iR, oR, sP, eP) {
+  const sD = px(sP), eD = px(eP);
+  const os = pt(oR,sD), oe = pt(oR,eD), is_ = pt(iR,sD), ie = pt(iR,eD);
+  const la = (sD - eD) > 180 ? 1 : 0;
+  return `M${f(os.x)},${f(os.y)} A${oR},${oR},0,${la},1,${f(oe.x)},${f(oe.y)} L${f(ie.x)},${f(ie.y)} A${iR},${iR},0,${la},0,${f(is_.x)},${f(is_.y)} Z`;
+}
+
+function bgArcPath(iR, oR) {
+  const ls=pt(oR,180), rs=pt(oR,0), li=pt(iR,180), ri=pt(iR,0);
+  return `M${f(ls.x)},${f(ls.y)} A${oR},${oR},0,0,1,${f(rs.x)},${f(rs.y)} L${f(ri.x)},${f(ri.y)} A${iR},${iR},0,0,0,${f(li.x)},${f(li.y)} Z`;
+}
+
+function buildDial({ showTarget, target, guesses, spectrum, players }) {
+  let s = `<svg viewBox="0 0 ${VW} ${VH}" xmlns="${NS}">`;
+
+  // Background band
+  const bg = bgArcPath(IR, OR);
+  s += `<path d="${bg}" fill="#1a2a50" stroke="#2a3f70" stroke-width="1"/>`;
+
+  // Scoring zones
+  if (showTarget && target != null) {
+    const t = target;
+    [
+      { from: t-0.14, to: t-0.09, pts: 2, fill: '#d4a93a', op: 0.80 },
+      { from: t-0.09, to: t-0.04, pts: 3, fill: '#6dbe72', op: 0.85 },
+      { from: t-0.04, to: t+0.04, pts: 4, fill: '#4ecdc4', op: 0.95 },
+      { from: t+0.04, to: t+0.09, pts: 3, fill: '#6dbe72', op: 0.85 },
+      { from: t+0.09, to: t+0.14, pts: 2, fill: '#d4a93a', op: 0.80 },
+    ].forEach(z => {
+      const ss = Math.max(0.01, z.from), ee = Math.min(0.99, z.to);
+      if (ss >= ee) return;
+      const mid = pt((OR+IR)/2, px((ss+ee)/2));
+      s += `<path d="${sector(IR, OR, ss, ee)}" fill="${z.fill}" opacity="${z.op}"/>`;
+      s += `<text x="${f(mid.x)}" y="${f(mid.y)}" text-anchor="middle" dominant-baseline="middle" fill="rgba(0,0,0,0.75)" font-size="13" font-weight="bold" font-family="system-ui">${z.pts}</text>`;
+    });
+  }
+
+  // Arc outline + ticks
+  s += `<path d="${bg}" fill="none" stroke="rgba(255,255,255,0.12)" stroke-width="1.5"/>`;
+  for (let i = 1; i < 10; i++) {
+    const inner = pt(OR-10, px(i/10)), outer = pt(OR-2, px(i/10));
+    s += `<line x1="${f(inner.x)}" y1="${f(inner.y)}" x2="${f(outer.x)}" y2="${f(outer.y)}" stroke="rgba(255,255,255,0.15)" stroke-width="1"/>`;
+  }
+
+  // Existing guesses (shown on reveal)
+  if (guesses && players) {
+    guesses.forEach(g => {
+      const player = players.find(p => p.id === g.playerId);
+      if (!player || g.position == null) return;
+      const tip = pt(OR-8, px(g.position));
+      s += `<line x1="${CX}" y1="${CY}" x2="${f(tip.x)}" y2="${f(tip.y)}" stroke="${player.color}" stroke-width="2.5" stroke-linecap="round"/>`;
+      s += `<circle cx="${f(tip.x)}" cy="${f(tip.y)}" r="8" fill="${player.color}" stroke="rgba(0,0,0,0.5)" stroke-width="1.5"/>`;
+    });
+  }
+
+  // Hub (data-hub so we can insert needles before it)
+  s += `<circle data-hub="1" cx="${CX}" cy="${CY}" r="20" fill="#0e1525" stroke="rgba(255,255,255,0.2)" stroke-width="1.5"/>`;
+  s += `<circle cx="${CX}" cy="${CY}" r="7" fill="rgba(255,255,255,0.15)"/>`;
+
+  // Baseline
+  const bl = pt(OR,180), br = pt(OR,0);
+  s += `<line x1="${f(bl.x)}" y1="${f(bl.y)}" x2="${f(br.x)}" y2="${f(br.y)}" stroke="rgba(255,255,255,0.15)" stroke-width="1"/>`;
+
+  // Spectrum labels
+  s += `<text x="14" y="${CY+22}" fill="#6aacff" font-size="13" font-weight="bold" font-family="system-ui">${esc(spectrum.left)}</text>`;
+  s += `<text x="${VW-14}" y="${CY+22}" text-anchor="end" fill="#ff8c69" font-size="13" font-weight="bold" font-family="system-ui">${esc(spectrum.right)}</text>`;
+
+  s += '</svg>';
+  return s;
+}
+
+// DOM needle manipulation — no re-render needed during drag
+function updateNeedle(svgEl, player, pos) {
+  svgEl.querySelectorAll('[data-needle]').forEach(el => el.remove());
+  if (pos == null) return;
+
+  const tip  = pt(OR-8, px(pos));
+  const line = document.createElementNS(NS, 'line');
+  line.setAttribute('data-needle', '1');
+  line.setAttribute('x1', CX); line.setAttribute('y1', CY);
+  line.setAttribute('x2', f(tip.x)); line.setAttribute('y2', f(tip.y));
+  line.setAttribute('stroke', player.color);
+  line.setAttribute('stroke-width', '3');
+  line.setAttribute('stroke-linecap', 'round');
+
+  const dot = document.createElementNS(NS, 'circle');
+  dot.setAttribute('data-needle', '1');
+  dot.setAttribute('cx', f(tip.x)); dot.setAttribute('cy', f(tip.y));
+  dot.setAttribute('r', '9');
+  dot.setAttribute('fill', player.color);
+  dot.setAttribute('stroke', 'rgba(0,0,0,0.5)');
+  dot.setAttribute('stroke-width', '1.5');
+
+  const hub = svgEl.querySelector('[data-hub]');
+  svgEl.insertBefore(line, hub);
+  svgEl.insertBefore(dot, hub);
+}
+
+function posFromClick(clientX, clientY, svgEl) {
+  const rect = svgEl.getBoundingClientRect();
+  const x = (clientX - rect.left) * (VW / rect.width);
+  const y = (clientY - rect.top)  * (VH / rect.height);
+  const dx = x - CX, dy = CY - y;
+  if (dy <= 5) return null;
+  const deg = Math.atan2(dy, dx) * 180 / Math.PI;
+  if (deg <= 0 || deg >= 180) return null;
+  return Math.max(0.01, Math.min(0.99, 1 - deg / 180));
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// DIAL INTERACTION
+// ═══════════════════════════════════════════════════════════════════════════════
+
+let dragging = false;
+let docMoveHandler = null, docUpHandler = null;
+
+function cleanupDialEvents() {
+  if (docMoveHandler) { document.removeEventListener('mousemove', docMoveHandler); docMoveHandler = null; }
+  if (docUpHandler)   { document.removeEventListener('mouseup',   docUpHandler);   docUpHandler = null; }
+  dragging = false;
+}
+
+function setupGuessingDial(myPlayer) {
+  cleanupDialEvents();
+  const svgEl = document.querySelector('#dial-wrap svg');
+  if (!svgEl) return;
+
+  function handle(cx, cy) {
+    const pos = posFromClick(cx, cy, svgEl);
+    if (pos == null) return;
+    currentGuessPos = pos;
+    updateNeedle(svgEl, myPlayer, pos);
+
+    const badge = document.getElementById('pos-badge');
+    if (badge) {
+      badge.className = 'active';
+      badge.innerHTML = `${Math.round(pos * 100)}% toward <strong>${esc(S.spectrum.right)}</strong>`;
+    }
+    const btn = document.getElementById('lock-btn');
+    if (btn) btn.disabled = false;
+  }
+
+  svgEl.addEventListener('mousedown', e => { dragging = true; handle(e.clientX, e.clientY); });
+  docMoveHandler = e => { if (dragging) handle(e.clientX, e.clientY); };
+  docUpHandler   = () => { dragging = false; };
+  document.addEventListener('mousemove', docMoveHandler);
+  document.addEventListener('mouseup',   docUpHandler);
+
+  svgEl.addEventListener('touchstart', e => { e.preventDefault(); dragging = true; handle(e.touches[0].clientX, e.touches[0].clientY); }, { passive: false });
+  svgEl.addEventListener('touchmove',  e => { e.preventDefault(); if (dragging) handle(e.touches[0].clientX, e.touches[0].clientY); }, { passive: false });
+  svgEl.addEventListener('touchend',   () => { dragging = false; });
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// WEBSOCKET + STATE
+// ═══════════════════════════════════════════════════════════════════════════════
+
+let ws       = null;
+let S        = null;         // server state snapshot
+let localErr = '';           // error message to show in current screen
+let currentGuessPos = null;  // drag position before locking
+
+function wsSend(msg) {
+  if (ws?.readyState === 1) ws.send(JSON.stringify(msg));
+}
+
+function connectWS() {
+  const proto = location.protocol === 'https:' ? 'wss:' : 'ws:';
+  ws = new WebSocket(`${proto}//${location.host}`);
+
+  ws.onopen = () => {
+    document.getElementById('conn-banner').style.display = 'none';
+    // Try to rejoin if we have stored credentials
+    const stored = getStored();
+    if (stored) wsSend({ type: 'JOIN_ROOM', code: stored.code, name: stored.name, playerId: stored.pid });
+  };
+
+  ws.onmessage = e => {
+    const msg = JSON.parse(e.data);
+    if (msg.type === 'STATE') {
+      S = msg.state;
+      currentGuessPos = null;
+      localErr = '';
+      saveStored();
+      render();
+    } else if (msg.type === 'ERROR') {
+      localErr = msg.message;
+      render();
+    } else if (msg.type === 'ROOM_CLOSED') {
+      S = null;
+      clearStored();
+      localErr = 'The host closed the room.';
+      render();
+    }
+  };
+
+  ws.onclose = () => {
+    if (S) document.getElementById('conn-banner').style.display = 'block';
+    setTimeout(connectWS, 2000); // auto-reconnect
+  };
+
+  ws.onerror = () => {};
+}
+
+// ─── session storage for rejoin ───────────────────────────────────────────────
+
+function saveStored() {
+  if (!S) return;
+  try { sessionStorage.setItem('wl', JSON.stringify({ pid: S.myId, code: S.code, name: S.players.find(p=>p.id===S.myId)?.name || '' })); } catch(e) {}
+}
+function getStored() {
+  try { const d = sessionStorage.getItem('wl'); return d ? JSON.parse(d) : null; } catch(e) { return null; }
+}
+function clearStored() {
+  try { sessionStorage.removeItem('wl'); } catch(e) {}
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// HELPERS
+// ═══════════════════════════════════════════════════════════════════════════════
+
+function esc(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function $(sel) { return document.querySelector(sel); }
+
+function miniScores() {
+  if (!S?.players?.length || S.players.every(p => p.totalScore === 0)) return '';
+  const sorted = [...S.players].sort((a,b) => b.totalScore - a.totalScore);
+  return `
+    <div class="card" style="padding:12px 16px">
+      <div style="font-size:0.72rem;text-transform:uppercase;letter-spacing:0.15em;color:var(--dim);margin-bottom:8px">Scores</div>
+      ${sorted.map(p => `
+        <div class="row" style="padding:3px 0">
+          <div class="dot" style="background:${p.color}"></div>
+          <span style="font-size:0.9rem;flex:1">${esc(p.name)}</span>
+          <span style="font-weight:700;color:var(--gold)">${p.totalScore}</span>
+        </div>`).join('')}
+    </div>`;
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// RENDER DISPATCHER
+// ═══════════════════════════════════════════════════════════════════════════════
+
+function render() {
+  cleanupDialEvents();
+  const app = document.getElementById('app');
+  app.innerHTML = '';
+  app.className = 'fade-in';
+
+  if (!S) { renderConnect(); return; }
+
+  switch (S.phase) {
+    case 'lobby':       renderLobby();       break;
+    case 'round_start': renderRoundStart();  break;
+    case 'clue_entry':  renderClueEntry();   break;
+    case 'guessing':    renderGuessing();    break;
+    case 'reveal':      renderReveal();      break;
+    case 'game_over':   renderGameOver();    break;
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// CONNECT SCREEN
+// ═══════════════════════════════════════════════════════════════════════════════
+
+function renderConnect() {
+  const app = document.getElementById('app');
+  app.innerHTML = `
+    <h1>Mind Meter</h1>
+    <p class="subtitle">A mind-reading party game · Each player uses their own device</p>
+
+    <div class="card">
+      <div style="font-size:0.85rem;color:var(--dim);margin-bottom:10px">Your name</div>
+      <input type="text" id="pname" placeholder="Enter your name" maxlength="20" autocomplete="off">
+    </div>
+
+    <button class="btn btn-primary" onclick="doCreate()">Create Game</button>
+
+    <div class="divider">or join an existing game</div>
+
+    <div class="card">
+      <div style="font-size:0.85rem;color:var(--dim);margin-bottom:10px">Room code</div>
+      <input type="text" id="rcode" class="code-input" placeholder="A B C D" maxlength="4" autocomplete="off">
+    </div>
+
+    <button class="btn btn-ghost" onclick="doJoin()">Join Game →</button>
+
+    <div class="err" id="conn-err">${esc(localErr)}</div>
+  `;
+
+  $('#pname').addEventListener('keydown', e => { if (e.key === 'Enter') { if ($('#rcode').value.trim()) doJoin(); else doCreate(); } });
+  $('#rcode').addEventListener('keydown', e => { if (e.key === 'Enter') doJoin(); });
+  setTimeout(() => { $('#pname')?.focus(); }, 50);
+}
+
+window.doCreate = function() {
+  const name = $('#pname')?.value.trim();
+  if (!name) { showConnErr('Enter your name first.'); return; }
+  localErr = '';
+  wsSend({ type: 'CREATE_ROOM', name });
+};
+
+window.doJoin = function() {
+  const name = $('#pname')?.value.trim();
+  const code = $('#rcode')?.value.trim().toUpperCase();
+  if (!name) { showConnErr('Enter your name first.'); return; }
+  if (!code || code.length < 4) { showConnErr('Enter the 4-character room code.'); return; }
+  localErr = '';
+  wsSend({ type: 'JOIN_ROOM', code, name });
+};
+
+function showConnErr(msg) {
+  localErr = msg;
+  const el = document.getElementById('conn-err');
+  if (el) el.textContent = msg;
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// LOBBY
+// ═══════════════════════════════════════════════════════════════════════════════
+
+function renderLobby() {
+  const app = document.getElementById('app');
+
+  const playerChips = S.players.map(p => `
+    <div class="chip${p.connected ? '' : ' offline'}">
+      <div class="dot${p.connected ? ' pulse' : ''}" style="background:${p.color}"></div>
+      <span>${esc(p.name)}</span>
+      ${p.isHost ? `<span style="font-size:0.7rem;color:var(--teal);margin-left:2px">HOST</span>` : ''}
+    </div>`).join('');
+
+  const hostControls = S.isHost ? `
+    <div class="card">
+      <div class="row">
+        <span style="font-size:0.95rem">Rounds</span>
+        <div class="spacer"></div>
+        <div class="stepper">
+          <button class="step-btn" onclick="setRounds(-1)">−</button>
+          <div class="step-val" id="round-val">${S.totalRounds}</div>
+          <button class="step-btn" onclick="setRounds(+1)">+</button>
+        </div>
+      </div>
+    </div>
+    <button class="btn btn-primary" onclick="startGame()" ${S.players.length < 2 ? 'disabled' : ''}>
+      Start Game (${S.players.length} players)
+    </button>` : `
+    <div class="card waiting-card" style="padding:20px">
+      <div class="waiting-icon">⏳</div>
+      <div style="color:var(--dim)">Waiting for the host to start…</div>
+    </div>`;
+
+  app.innerHTML = `
+    <h1>Mind Meter</h1>
+
+    <div class="card" style="text-align:center">
+      <div class="room-code-label">Room Code · Share with friends</div>
+      <div class="room-code">${esc(S.code)}</div>
+      <div style="margin-top:8px">
+        <button class="btn btn-ghost btn-icon" id="copy-btn" onclick="copyCode()">Copy Code</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <div style="font-size:0.85rem;color:var(--dim);margin-bottom:10px">
+        Players (${S.players.length}/8)
+      </div>
+      <div class="player-chips">${playerChips}</div>
+    </div>
+
+    ${hostControls}
+    <div class="err">${esc(localErr)}</div>
+  `;
+}
+
+window.copyCode = function() {
+  navigator.clipboard?.writeText(S.code).then(() => {
+    const btn = document.getElementById('copy-btn');
+    if (btn) { btn.textContent = 'Copied!'; setTimeout(() => { if (btn) btn.textContent = 'Copy Code'; }, 1500); }
+  }).catch(() => {
+    const btn = document.getElementById('copy-btn');
+    if (btn) btn.textContent = S.code;
+  });
+};
+
+window.setRounds = function(delta) {
+  const newVal = Math.max(2, Math.min(20, S.totalRounds + delta));
+  wsSend({ type: 'SET_ROUNDS', rounds: newVal });
+};
+
+window.startGame = function() {
+  wsSend({ type: 'START_GAME' });
+};
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// ROUND START
+// ═══════════════════════════════════════════════════════════════════════════════
+
+function renderRoundStart() {
+  const app = document.getElementById('app');
+  const cgName = S.clueGiverName;
+  const isCG   = S.isClueGiver;
+
+  app.innerHTML = `
+    <div class="round-label">Round ${S.roundNum} of ${S.totalRounds}</div>
+    <div class="phase-title">Round ${S.roundNum}</div>
+
+    <div class="card" style="text-align:center;padding:22px">
+      <div style="font-size:0.82rem;color:var(--dim);margin-bottom:8px">Clue Giver</div>
+      <div class="row" style="justify-content:center;gap:10px">
+        <div class="dot" style="width:18px;height:18px;background:${S.players[S.clueGiverIdx]?.color || '#fff'}"></div>
+        <span style="font-size:1.7rem;font-weight:900;color:${S.players[S.clueGiverIdx]?.color || '#fff'}">${esc(cgName)}</span>
+      </div>
+      ${isCG ? `<p style="margin-top:10px;color:var(--teal);font-size:0.9rem;font-weight:600">That's you! Get ready to give a clue.</p>` : `<p style="margin-top:10px;color:var(--dim);font-size:0.85rem">Think about this spectrum while ${esc(cgName)} thinks of a clue.</p>`}
+    </div>
+
+    <div class="card">
+      <div style="font-size:0.8rem;color:var(--dim);margin-bottom:8px">This round's spectrum</div>
+      <div class="row" style="justify-content:center;gap:14px;font-size:1.25rem;font-weight:700">
+        <span class="spec-left">${esc(S.spectrum.left)}</span>
+        <span style="color:var(--dim)">↔</span>
+        <span class="spec-right">${esc(S.spectrum.right)}</span>
+      </div>
+    </div>
+
+    ${miniScores()}
+
+    ${S.isHost
+      ? `<button class="btn btn-primary" onclick="advanceRound()">Start Round →</button>`
+      : `<div class="card waiting-card" style="padding:16px;text-align:center;color:var(--dim);font-size:0.9rem">Waiting for host to start the round…</div>`
+    }
+  `;
+}
+
+window.advanceRound = function() { wsSend({ type: 'ADVANCE_ROUND' }); };
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// CLUE ENTRY
+// ═══════════════════════════════════════════════════════════════════════════════
+
+function renderClueEntry() {
+  const app = document.getElementById('app');
+
+  if (S.isClueGiver) {
+    // Clue giver sees the dial with target
+    app.innerHTML = `
+      <div class="round-label">Round ${S.roundNum} · Your Turn to Give a Clue</div>
+      <div class="phase-title" style="color:${S.players[S.clueGiverIdx]?.color}">${esc(S.clueGiverName)}</div>
+
+      <div class="card">
+        <div class="spectrum-row">
+          <span class="spec-left">${esc(S.spectrum.left)}</span>
+          <span class="spec-right">${esc(S.spectrum.right)}</span>
+        </div>
+        <div class="dial-wrap" id="dial-wrap">
+          ${buildDial({ showTarget: true, target: S.target, guesses: [], spectrum: S.spectrum, players: S.players })}
+        </div>
+        <p style="text-align:center;font-size:0.8rem;color:var(--dim);margin-top:8px">
+          The <span style="color:var(--teal)">teal zone</span> is the hidden target. Give a clue pointing to it!
+        </p>
+      </div>
+
+      <div class="card">
+        <label style="font-size:0.85rem;color:var(--dim);display:block;margin-bottom:8px">Your clue (word or short phrase):</label>
+        <input type="text" id="clue-input" placeholder="e.g. Coffee, Glaciers, Lukewarm…" maxlength="60" autocomplete="off">
+        <p style="font-size:0.78rem;color:var(--dim);margin-top:6px">Don't use the spectrum words. Be evocative!</p>
+      </div>
+
+      <button class="btn btn-primary" onclick="submitClue()">Submit Clue →</button>
+      <div class="err" id="clue-err">${esc(localErr)}</div>
+    `;
+
+    setTimeout(() => { $('#clue-input')?.focus(); }, 50);
+    $('#clue-input')?.addEventListener('keydown', e => { if (e.key === 'Enter') submitClue(); });
+
+  } else {
+    // Everyone else waits
+    app.innerHTML = `
+      <div class="round-label">Round ${S.roundNum} · Clue Entry</div>
+      <div class="phase-title">Waiting…</div>
+
+      <div class="card waiting-card">
+        <div class="waiting-icon">🤔</div>
+        <div style="font-size:1.1rem;font-weight:700;margin-bottom:6px">${esc(S.clueGiverName)} is thinking…</div>
+        <p style="color:var(--dim);font-size:0.88rem">Think about the spectrum while you wait.</p>
+      </div>
+
+      <div class="card">
+        <div class="spectrum-row">
+          <span class="spec-left">${esc(S.spectrum.left)}</span>
+          <span class="spec-right">${esc(S.spectrum.right)}</span>
+        </div>
+        <div class="dial-wrap">
+          ${buildDial({ showTarget: false, target: null, guesses: [], spectrum: S.spectrum, players: S.players })}
+        </div>
+      </div>
+    `;
+  }
+}
+
+window.submitClue = function() {
+  const clue = document.getElementById('clue-input')?.value.trim();
+  if (!clue) { localErr = 'Please enter a clue.'; const el = document.getElementById('clue-err'); if(el) el.textContent = localErr; return; }
+  wsSend({ type: 'SUBMIT_CLUE', clue });
+};
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// GUESSING
+// ═══════════════════════════════════════════════════════════════════════════════
+
+function renderGuessing() {
+  const app = document.getElementById('app');
+
+  if (S.isClueGiver) {
+    // Clue giver watches progress
+    const pct = S.totalGuessers > 0 ? (S.guessCount / S.totalGuessers) * 100 : 0;
+    app.innerHTML = `
+      <div class="round-label">Round ${S.roundNum} · Waiting for Guesses</div>
+      <div class="phase-title">Your clue is out there…</div>
+
+      <div class="clue-box">
+        <div class="clue-label">Your Clue</div>
+        <div class="clue-text">"${esc(S.clue)}"</div>
+      </div>
+
+      <div class="card">
+        <div class="row" style="justify-content:space-between;margin-bottom:8px">
+          <span style="color:var(--dim);font-size:0.88rem">Players guessed</span>
+          <span style="font-weight:700">${S.guessCount} / ${S.totalGuessers}</span>
+        </div>
+        <div class="progress-wrap">
+          <div class="progress-fill" style="width:${pct}%"></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="spectrum-row">
+          <span class="spec-left">${esc(S.spectrum.left)}</span>
+          <span class="spec-right">${esc(S.spectrum.right)}</span>
+        </div>
+        <div class="dial-wrap">
+          ${buildDial({ showTarget: true, target: S.target, guesses: [], spectrum: S.spectrum, players: S.players })}
+        </div>
+      </div>
+    `;
+    return;
+  }
+
+  if (S.myGuessLocked) {
+    // Already guessed — show waiting screen
+    const pct = S.totalGuessers > 0 ? (S.guessCount / S.totalGuessers) * 100 : 0;
+    const myPlayer = S.players.find(p => p.id === S.myId);
+    app.innerHTML = `
+      <div class="round-label">Round ${S.roundNum} · Waiting</div>
+      <div class="phase-title">Locked in!</div>
+
+      <div class="clue-box">
+        <div class="clue-label">The Clue</div>
+        <div class="clue-text">"${esc(S.clue)}"</div>
+      </div>
+
+      <div class="card">
+        <div class="row" style="justify-content:space-between;margin-bottom:8px">
+          <span style="color:var(--dim);font-size:0.88rem">Waiting for others</span>
+          <span style="font-weight:700">${S.guessCount} / ${S.totalGuessers}</span>
+        </div>
+        <div class="progress-wrap">
+          <div class="progress-fill" style="width:${pct}%"></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="spectrum-row">
+          <span class="spec-left">${esc(S.spectrum.left)}</span>
+          <span class="spec-right">${esc(S.spectrum.right)}</span>
+        </div>
+        <div class="dial-wrap" id="dial-wrap">
+          ${buildDial({ showTarget: false, target: null, guesses: [], spectrum: S.spectrum, players: S.players })}
+        </div>
+      </div>
+    `;
+
+    // Show their own locked needle (read-only)
+    if (S.myGuessPosition != null) {
+      const svgEl = document.querySelector('#dial-wrap svg');
+      if (svgEl && myPlayer) updateNeedle(svgEl, myPlayer, S.myGuessPosition);
+    }
+    return;
+  }
+
+  // Active guesser — interactive dial
+  const myPlayer = S.players.find(p => p.id === S.myId);
+  const posText  = currentGuessPos != null
+    ? `${Math.round(currentGuessPos * 100)}% toward <strong>${esc(S.spectrum.right)}</strong>`
+    : 'Click or drag on the dial to place your guess';
+
+  app.innerHTML = `
+    <div class="round-label">Round ${S.roundNum} · Your Guess</div>
+    <div class="phase-title" style="color:${myPlayer?.color}">${esc(myPlayer?.name || '')}</div>
+
+    <div class="clue-box">
+      <div class="clue-label">The Clue</div>
+      <div class="clue-text">"${esc(S.clue)}"</div>
+    </div>
+
+    <div class="card">
+      <div class="spectrum-row">
+        <span class="spec-left">${esc(S.spectrum.left)}</span>
+        <span class="spec-right">${esc(S.spectrum.right)}</span>
+      </div>
+      <div class="dial-wrap" id="dial-wrap">
+        ${buildDial({ showTarget: false, target: null, guesses: [], spectrum: S.spectrum, players: S.players })}
+      </div>
+    </div>
+
+    <div id="pos-badge" class="${currentGuessPos != null ? 'active' : ''}">${posText}</div>
+
+    <button class="btn btn-primary" id="lock-btn" onclick="lockGuess()" ${currentGuessPos == null ? 'disabled' : ''}>
+      Lock In Guess →
+    </button>
+  `;
+
+  // Restore existing drag position if any
+  if (currentGuessPos != null && myPlayer) {
+    const svgEl = document.querySelector('#dial-wrap svg');
+    if (svgEl) updateNeedle(svgEl, myPlayer, currentGuessPos);
+  }
+
+  if (myPlayer) setupGuessingDial(myPlayer);
+}
+
+window.lockGuess = function() {
+  if (currentGuessPos == null) return;
+  wsSend({ type: 'SUBMIT_GUESS', position: currentGuessPos });
+  currentGuessPos = null;
+};
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// REVEAL
+// ═══════════════════════════════════════════════════════════════════════════════
+
+function renderReveal() {
+  const app = document.getElementById('app');
+  const scoreColors = { 0: '#555', 2: '#d4a93a', 3: '#6dbe72', 4: '#4ecdc4' };
+
+  const sortedGuesses = [...(S.guesses || [])].sort((a,b) => b.score - a.score);
+  const scoreRowsHtml = sortedGuesses.map(g => {
+    const p = S.players.find(pl => pl.id === g.playerId);
+    if (!p) return '';
+    return `
+      <div class="score-row">
+        <div class="dot" style="background:${p.color}"></div>
+        <div class="name">${esc(p.name)}</div>
+        <div class="pts-round" style="color:${scoreColors[g.score] || '#555'}">${g.score > 0 ? '+'+g.score : '0'}</div>
+        <div class="pts-total">Total: ${p.totalScore}</div>
+      </div>`;
+  }).join('');
+
+  const cgPlayer = S.players[S.clueGiverIdx];
+
+  app.innerHTML = `
+    <div class="round-label">Round ${S.roundNum} of ${S.totalRounds} · Results</div>
+    <div class="phase-title">Reveal!</div>
+
+    <div class="card">
+      <div class="spectrum-row">
+        <span class="spec-left">${esc(S.spectrum.left)}</span>
+        <span class="spec-right">${esc(S.spectrum.right)}</span>
+      </div>
+      <div class="dial-wrap">
+        ${buildDial({ showTarget: true, target: S.target, guesses: S.guesses || [], spectrum: S.spectrum, players: S.players })}
+      </div>
+    </div>
+
+    <div class="clue-box" style="margin-bottom:14px">
+      <div class="clue-label">Clue by ${esc(cgPlayer?.name || '')}</div>
+      <div class="clue-text">"${esc(S.clue)}"</div>
+    </div>
+
+    <div class="card">
+      <div style="font-size:0.85rem;color:var(--dim);margin-bottom:10px">Round Scores</div>
+      <div class="score-list">${scoreRowsHtml || '<div style="color:var(--dim);text-align:center">No guesses this round</div>'}</div>
+    </div>
+
+    ${S.isHost
+      ? `<button class="btn btn-primary" onclick="nextRound()">
+           ${S.roundNum >= S.totalRounds ? 'See Final Results →' : `Next Round (${S.totalRounds - S.roundNum} left) →`}
+         </button>`
+      : `<div class="card" style="text-align:center;padding:14px;color:var(--dim);font-size:0.9rem">Waiting for host to continue…</div>`
+    }
+  `;
+}
+
+window.nextRound = function() { wsSend({ type: 'NEXT_ROUND' }); };
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// GAME OVER
+// ═══════════════════════════════════════════════════════════════════════════════
+
+function renderGameOver() {
+  const app = document.getElementById('app');
+  const sorted = [...S.players].sort((a,b) => b.totalScore - a.totalScore);
+  const medals = ['🥇','🥈','🥉'];
+
+  app.innerHTML = `
+    <h1>Game Over!</h1>
+    <p class="subtitle">${S.totalRounds} rounds complete</p>
+
+    <div class="card" style="text-align:center;padding:28px">
+      <div style="font-size:0.85rem;color:var(--dim);margin-bottom:8px">Winner!</div>
+      <div style="font-size:3rem;margin-bottom:8px">🏆</div>
+      <div style="font-size:2rem;font-weight:900;color:${sorted[0].color}">${esc(sorted[0].name)}</div>
+      <div style="font-size:1.4rem;color:var(--gold);margin-top:6px">${sorted[0].totalScore} pts</div>
+    </div>
+
+    <div class="card">
+      <div style="font-size:0.85rem;color:var(--dim);margin-bottom:10px">Final Standings</div>
+      ${sorted.map((p,i) => `
+        <div class="lb-row">
+          <div class="lb-rank">${medals[i] || (i+1)+'.'}</div>
+          <div class="dot" style="background:${p.color}"></div>
+          <div class="lb-name">${esc(p.name)}</div>
+          <div class="lb-score">${p.totalScore}</div>
+        </div>`).join('')}
+    </div>
+
+    ${S.isHost ? `
+      <button class="btn btn-primary" onclick="playAgain()">Play Again (Same Players)</button>
+      <button class="btn btn-ghost" onclick="newGame()" style="margin-top:8px">New Game (Change Players)</button>
+    ` : `<div class="card" style="text-align:center;padding:14px;color:var(--dim);font-size:0.9rem">Waiting for host…</div>`}
+  `;
+}
+
+window.playAgain = function() { wsSend({ type: 'PLAY_AGAIN' }); };
+window.newGame   = function() { wsSend({ type: 'NEW_GAME' }); };
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════════════════════════════════════════
+
+render();       // Show connect screen immediately
+connectWS();    // Connect to server
+</script>
+</body>
+</html>
