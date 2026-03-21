@@ -178,8 +178,6 @@
       100% { r: 32; opacity: 0; }
     }
     .pulse-ring { animation: ring-pulse 2s ease-out infinite; fill: none; stroke: url(#pulse-grad); stroke-width: 2; }
-    .pulse-ring:nth-child(2) { animation-delay: 0.6s; }
-    .pulse-ring:nth-child(3) { animation-delay: 1.2s; }
 
     /* ── connection banner ── */
     #conn-banner { display: none; position: fixed; top: 0; left: 0; right: 0; background: linear-gradient(90deg, #e05555, #c03030); color: #fff; text-align: center; padding: 8px; font-size: 0.85rem; font-weight: 600; z-index: 999; }
@@ -194,6 +192,26 @@
     /* ── fade in ── */
     @keyframes fadeUp { from { opacity:0; transform:translateY(10px); } to { opacity:1; transform:translateY(0); } }
     .fade-in { animation: fadeUp 0.25s ease-out; }
+
+    /* ── fireworks canvas ── */
+    #fw-canvas { position: fixed; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 0; }
+
+    /* ── game over screen ── */
+    .winner-card {
+      text-align: center; padding: 32px 20px;
+      background: linear-gradient(135deg, rgba(78,205,196,0.08), rgba(123,97,255,0.12));
+      border: 1px solid rgba(78,205,196,0.3);
+      box-shadow: 0 0 40px rgba(78,205,196,0.1), 0 0 80px rgba(123,97,255,0.08);
+    }
+    .rank-badge {
+      display: inline-flex; align-items: center; justify-content: center;
+      width: 28px; height: 28px; border-radius: 50%;
+      font-size: 0.8rem; font-weight: 800; flex-shrink: 0;
+    }
+    .rank-1 { background: linear-gradient(135deg, var(--teal), var(--purple)); color: #fff; }
+    .rank-2 { background: rgba(123,97,255,0.35); color: var(--purple); border: 1px solid rgba(123,97,255,0.4); }
+    .rank-3 { background: rgba(78,205,196,0.15); color: var(--teal); border: 1px solid rgba(78,205,196,0.3); }
+    .rank-n  { background: rgba(255,255,255,0.07); color: var(--dim); border: 1px solid var(--border); }
   </style>
 </head>
 <body>
@@ -206,6 +224,23 @@
 // ═══════════════════════════════════════════════════════════════════════════════
 
 const COLORS = ['#FF6B6B','#4ECDC4','#FFD93D','#7B61FF','#FF8C42','#A8E6CF','#F78FB3','#63CDDA'];
+
+function pulseIcon() {
+  return `<div class="pulse-wrap">
+    <svg class="pulse-svg" viewBox="0 0 72 72" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <linearGradient id="pulse-grad" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0%" stop-color="#4ecdc4"/>
+          <stop offset="100%" stop-color="#7b61ff"/>
+        </linearGradient>
+      </defs>
+      <circle cx="36" cy="36" r="5" fill="url(#pulse-grad)"/>
+      <circle class="pulse-ring" cx="36" cy="36" r="6"/>
+      <circle class="pulse-ring" cx="36" cy="36" r="6" style="animation-delay:0.65s"/>
+      <circle class="pulse-ring" cx="36" cy="36" r="6" style="animation-delay:1.3s"/>
+    </svg>
+  </div>`;
+}
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // SVG DIAL
@@ -592,20 +627,7 @@ function renderLobby() {
       Start Game (${S.players.length} players)
     </button>` : `
     <div class="card waiting-card" style="padding:20px">
-      <div class="pulse-wrap">
-          <svg class="pulse-svg" viewBox="0 0 72 72" xmlns="http://www.w3.org/2000/svg">
-            <defs>
-              <linearGradient id="pulse-grad" x1="0" y1="0" x2="1" y2="1">
-                <stop offset="0%" stop-color="#4ecdc4"/>
-                <stop offset="100%" stop-color="#7b61ff"/>
-              </linearGradient>
-            </defs>
-            <circle cx="36" cy="36" r="5" fill="url(#pulse-grad)"/>
-            <circle class="pulse-ring" cx="36" cy="36" r="6"/>
-            <circle class="pulse-ring" cx="36" cy="36" r="6"/>
-            <circle class="pulse-ring" cx="36" cy="36" r="6"/>
-          </svg>
-        </div>
+      ${pulseIcon()}
       <div style="color:var(--dim)">Waiting for the host to start…</div>
     </div>`;
 
@@ -739,22 +761,7 @@ function renderClueEntry() {
       <div class="phase-title">Waiting…</div>
 
       <div class="card waiting-card">
-        <div class="pulse-wrap">
-          <svg class="pulse-svg" viewBox="0 0 72 72" xmlns="http://www.w3.org/2000/svg">
-            <defs>
-              <linearGradient id="pulse-grad" x1="0" y1="0" x2="1" y2="1">
-                <stop offset="0%" stop-color="#4ecdc4"/>
-                <stop offset="100%" stop-color="#7b61ff"/>
-              </linearGradient>
-            </defs>
-            <!-- center dot -->
-            <circle cx="36" cy="36" r="5" fill="url(#pulse-grad)"/>
-            <!-- expanding rings -->
-            <circle class="pulse-ring" cx="36" cy="36" r="6"/>
-            <circle class="pulse-ring" cx="36" cy="36" r="6"/>
-            <circle class="pulse-ring" cx="36" cy="36" r="6"/>
-          </svg>
-        </div>
+        ${pulseIcon()}
         <div style="font-size:1.1rem;font-weight:700;margin-bottom:6px">${esc(S.clueGiverName)} is thinking…</div>
         <p style="color:var(--dim);font-size:0.88rem">Think about the spectrum while you wait.</p>
       </div>
@@ -974,24 +981,37 @@ window.nextRound = function() { wsSend({ type: 'NEXT_ROUND' }); };
 function renderGameOver() {
   const app = document.getElementById('app');
   const sorted = [...S.players].sort((a,b) => b.totalScore - a.totalScore);
-  const medals = ['🥇','🥈','🥉'];
+  const rankClass = ['rank-1','rank-2','rank-3'];
+  const isWinner = S.myId && sorted[0] && S.myId === sorted[0].id;
 
   app.innerHTML = `
+    ${isWinner ? '<canvas id="fw-canvas"></canvas>' : ''}
     <h1>Game Over!</h1>
     <p class="subtitle">${S.totalRounds} rounds complete</p>
 
-    <div class="card" style="text-align:center;padding:28px">
-      <div style="font-size:0.85rem;color:var(--dim);margin-bottom:8px">Winner!</div>
-      <div style="font-size:3rem;margin-bottom:8px">🏆</div>
-      <div style="font-size:2rem;font-weight:900;color:${sorted[0].color}">${esc(sorted[0].name)}</div>
-      <div style="font-size:1.4rem;color:var(--gold);margin-top:6px">${sorted[0].totalScore} pts</div>
+    <div class="card winner-card">
+      <div style="font-size:0.72rem;text-transform:uppercase;letter-spacing:0.2em;color:var(--teal);margin-bottom:14px">Winner</div>
+      <svg width="48" height="48" viewBox="0 0 48 48" fill="none" style="margin-bottom:12px" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <linearGradient id="crown-grad" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0%" stop-color="#4ecdc4"/><stop offset="100%" stop-color="#7b61ff"/>
+          </linearGradient>
+        </defs>
+        <path d="M6 34L10 18L18 26L24 10L30 26L38 18L42 34H6Z" fill="url(#crown-grad)" opacity="0.9"/>
+        <rect x="6" y="36" width="36" height="5" rx="2.5" fill="url(#crown-grad)"/>
+        <circle cx="24" cy="10" r="3" fill="url(#crown-grad)"/>
+        <circle cx="10" cy="18" r="2.5" fill="url(#crown-grad)"/>
+        <circle cx="38" cy="18" r="2.5" fill="url(#crown-grad)"/>
+      </svg>
+      <div style="font-size:2rem;font-weight:900;color:${sorted[0].color};margin-bottom:6px">${esc(sorted[0].name)}</div>
+      <div class="lb-score" style="font-size:1.8rem">${sorted[0].totalScore} pts</div>
     </div>
 
     <div class="card">
-      <div style="font-size:0.85rem;color:var(--dim);margin-bottom:10px">Final Standings</div>
+      <div style="font-size:0.72rem;text-transform:uppercase;letter-spacing:0.18em;color:var(--dim);margin-bottom:12px">Final Standings</div>
       ${sorted.map((p,i) => `
         <div class="lb-row">
-          <div class="lb-rank">${medals[i] || (i+1)+'.'}</div>
+          <div class="rank-badge ${rankClass[i] || 'rank-n'}">${i+1}</div>
           <div class="dot" style="background:${p.color}"></div>
           <div class="lb-name">${esc(p.name)}</div>
           <div class="lb-score">${p.totalScore}</div>
@@ -1003,6 +1023,64 @@ function renderGameOver() {
       <button class="btn btn-ghost" onclick="newGame()" style="margin-top:8px">New Game (Change Players)</button>
     ` : `<div class="card" style="text-align:center;padding:14px;color:var(--dim);font-size:0.9rem">Waiting for host…</div>`}
   `;
+
+  if (isWinner) launchFireworks();
+}
+
+function launchFireworks() {
+  const canvas = document.getElementById('fw-canvas');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  const resize = () => { canvas.width = window.innerWidth; canvas.height = window.innerHeight; };
+  resize();
+  window.addEventListener('resize', resize);
+
+  const COLORS = ['#4ecdc4','#7b61ff','#a78bfa','#6ee7e7','#ffffff','#c4b5fd'];
+  const particles = [];
+
+  function burst(x, y) {
+    const count = 28 + Math.floor(Math.random() * 14);
+    for (let i = 0; i < count; i++) {
+      const angle = (Math.PI * 2 * i) / count + (Math.random() - 0.5) * 0.3;
+      const speed = 1.5 + Math.random() * 3.5;
+      particles.push({
+        x, y,
+        vx: Math.cos(angle) * speed,
+        vy: Math.sin(angle) * speed - 1,
+        alpha: 1,
+        color: COLORS[Math.floor(Math.random() * COLORS.length)],
+        r: 1.5 + Math.random() * 2.5,
+        decay: 0.013 + Math.random() * 0.007
+      });
+    }
+  }
+
+  let frame = 0;
+  const stops = [40, 90, 140, 200, 270, 350];
+  stops.forEach(f => setTimeout(() => {
+    burst(canvas.width * (0.2 + Math.random() * 0.6), canvas.height * (0.1 + Math.random() * 0.5));
+  }, f * 16));
+
+  function animate() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    for (let i = particles.length - 1; i >= 0; i--) {
+      const p = particles[i];
+      p.x += p.vx; p.y += p.vy;
+      p.vy += 0.06;
+      p.vx *= 0.98;
+      p.alpha -= p.decay;
+      if (p.alpha <= 0) { particles.splice(i, 1); continue; }
+      ctx.globalAlpha = p.alpha;
+      ctx.fillStyle = p.color;
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.globalAlpha = 1;
+    frame++;
+    if (frame < 420) requestAnimationFrame(animate);
+  }
+  animate();
 }
 
 window.playAgain = function() { wsSend({ type: 'PLAY_AGAIN' }); };
