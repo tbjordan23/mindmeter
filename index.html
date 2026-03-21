@@ -8,19 +8,23 @@
     * { box-sizing: border-box; margin: 0; padding: 0; }
 
     :root {
-      --bg:      #12101f;
-      --card:    rgba(255,255,255,0.05);
-      --border:  rgba(255,255,255,0.1);
+      --bg:      #0d0b1a;
+      --card:    rgba(255,255,255,0.04);
+      --border:  rgba(78,205,196,0.18);
       --teal:    #4ecdc4;
+      --purple:  #7b61ff;
       --coral:   #ff6b6b;
       --gold:    #ffd700;
-      --text:    #e8e8f0;
+      --text:    #eaeaf8;
       --dim:     #7a7a9a;
     }
 
     body {
       font-family: 'Segoe UI', system-ui, sans-serif;
-      background: var(--bg);
+      background:
+        radial-gradient(ellipse at 50% 0%,   rgba(123,97,255,0.18) 0%, transparent 60%),
+        radial-gradient(ellipse at 50% 100%, rgba(78,205,196,0.10) 0%, transparent 60%),
+        var(--bg);
       min-height: 100vh;
       color: var(--text);
       display: flex;
@@ -40,7 +44,7 @@
     h1 {
       font-size: 2.8rem; font-weight: 900; text-align: center;
       letter-spacing: 0.12em;
-      background: linear-gradient(135deg, var(--teal), #7b61ff, var(--coral));
+      background: linear-gradient(135deg, var(--teal), var(--purple));
       -webkit-background-clip: text; -webkit-text-fill-color: transparent;
       background-clip: text;
       margin-bottom: 4px;
@@ -50,26 +54,33 @@
     .phase-title { font-size: 1.8rem; font-weight: 800; text-align: center; margin-bottom: 20px; }
 
     /* ── cards ── */
-    .card { background: var(--card); border: 1px solid var(--border); border-radius: 16px; padding: 18px; margin-bottom: 14px; }
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 18px;
+      margin-bottom: 14px;
+      box-shadow: 0 4px 24px rgba(123,97,255,0.08), inset 0 1px 0 rgba(255,255,255,0.06);
+    }
 
     /* ── buttons ── */
-    .btn { display: block; width: 100%; padding: 14px 24px; border-radius: 50px; border: none; font-size: 1rem; font-weight: 700; cursor: pointer; transition: transform 0.15s, filter 0.15s; margin-top: 8px; letter-spacing: 0.04em; }
-    .btn:hover:not(:disabled)  { transform: translateY(-2px); filter: brightness(1.1); }
-    .btn:active:not(:disabled) { transform: translateY(0); }
+    .btn { display: block; width: 100%; padding: 14px 24px; border-radius: 50px; border: none; font-size: 1rem; font-weight: 700; cursor: pointer; transition: transform 0.15s, filter 0.15s, box-shadow 0.15s; margin-top: 8px; letter-spacing: 0.04em; }
+    .btn:hover:not(:disabled)  { transform: translateY(-2px); filter: brightness(1.12); box-shadow: 0 6px 20px rgba(78,205,196,0.25); }
+    .btn:active:not(:disabled) { transform: translateY(0); box-shadow: none; }
     .btn:disabled              { opacity: 0.4; cursor: not-allowed; }
-    .btn-primary  { background: linear-gradient(135deg, var(--teal), #2bb8af); color: #000; }
-    .btn-ghost    { background: rgba(255,255,255,0.07); color: var(--text); border: 1px solid var(--border); }
+    .btn-primary  { background: linear-gradient(135deg, var(--teal), var(--purple)); color: #fff; }
+    .btn-ghost    { background: rgba(255,255,255,0.06); color: var(--text); border: 1px solid var(--border); }
     .btn-danger   { background: linear-gradient(135deg, #e05555, #c03030); color: #fff; }
     .btn-sm       { width: auto; padding: 10px 18px; font-size: 0.88rem; margin-top: 0; }
     .btn-icon     { width: auto; padding: 8px 14px; font-size: 0.8rem; margin-top: 0; }
 
     /* ── inputs ── */
     input[type="text"] {
-      background: rgba(255,255,255,0.05); border: 1px solid var(--border); border-radius: 10px;
+      background: rgba(255,255,255,0.04); border: 1px solid var(--border); border-radius: 12px;
       color: var(--text); padding: 12px 14px; font-size: 1rem; width: 100%; outline: none;
-      transition: border-color 0.2s;
+      transition: border-color 0.2s, box-shadow 0.2s;
     }
-    input[type="text"]:focus      { border-color: var(--teal); background: rgba(78,205,196,0.05); }
+    input[type="text"]:focus      { border-color: var(--teal); background: rgba(78,205,196,0.05); box-shadow: 0 0 0 3px rgba(78,205,196,0.12); }
     input[type="text"]::placeholder { color: var(--dim); }
     input[type="text"].code-input  { font-size: 1.4rem; font-weight: 700; letter-spacing: 0.2em; text-align: center; text-transform: uppercase; }
 
@@ -82,7 +93,8 @@
     .player-chips { display: flex; flex-wrap: wrap; gap: 8px; }
     .chip {
       display: inline-flex; align-items: center; gap: 7px;
-      background: rgba(255,255,255,0.07); border-radius: 50px; padding: 6px 14px 6px 8px;
+      background: rgba(123,97,255,0.1); border: 1px solid rgba(123,97,255,0.2);
+      border-radius: 50px; padding: 6px 14px 6px 8px;
       font-size: 0.9rem;
     }
     .chip.offline { opacity: 0.45; }
@@ -92,14 +104,17 @@
 
     /* ── stepper ── */
     .stepper { display: flex; align-items: center; gap: 12px; }
-    .step-btn { width: 36px; height: 36px; border-radius: 50%; background: rgba(255,255,255,0.1); border: 1px solid var(--border); color: var(--text); font-size: 1.2rem; cursor: pointer; display: flex; align-items: center; justify-content: center; }
-    .step-btn:hover { background: rgba(255,255,255,0.18); }
+    .step-btn { width: 36px; height: 36px; border-radius: 50%; background: rgba(78,205,196,0.1); border: 1px solid var(--border); color: var(--teal); font-size: 1.2rem; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: background 0.15s; }
+    .step-btn:hover { background: rgba(78,205,196,0.2); }
     .step-val { font-size: 1.2rem; font-weight: 700; min-width: 32px; text-align: center; }
 
     /* ── room code display ── */
     .room-code {
       font-size: 3rem; font-weight: 900; letter-spacing: 0.3em; text-align: center;
-      color: var(--teal); font-family: 'Courier New', monospace;
+      background: linear-gradient(135deg, var(--teal), var(--purple));
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+      background-clip: text;
+      font-family: 'Courier New', monospace;
       padding: 12px 0 4px;
     }
     .room-code-label { font-size: 0.75rem; color: var(--dim); text-transform: uppercase; letter-spacing: 0.15em; text-align: center; margin-bottom: 6px; }
@@ -110,35 +125,46 @@
 
     /* ── spectrum labels ── */
     .spectrum-row { display: flex; justify-content: space-between; margin-bottom: 8px; }
-    .spec-left  { font-weight: 700; color: #6aacff; font-size: 1rem; }
-    .spec-right { font-weight: 700; color: #ff8c69; font-size: 1rem; }
+    .spec-left  { font-weight: 700; color: var(--teal); font-size: 1rem; }
+    .spec-right { font-weight: 700; color: var(--purple); font-size: 1rem; }
 
     /* ── clue box ── */
-    .clue-box { background: rgba(255,215,0,0.08); border: 1px solid rgba(255,215,0,0.25); border-radius: 12px; padding: 14px 18px; text-align: center; margin-bottom: 14px; }
+    .clue-box { background: rgba(78,205,196,0.07); border: 1px solid rgba(78,205,196,0.25); border-radius: 14px; padding: 14px 18px; text-align: center; margin-bottom: 14px; }
     .clue-label { font-size: 0.72rem; color: var(--dim); text-transform: uppercase; letter-spacing: 0.15em; margin-bottom: 4px; }
-    .clue-text  { font-size: 2rem; font-weight: 900; color: var(--gold); letter-spacing: 0.04em; }
+    .clue-text  {
+      font-size: 2rem; font-weight: 900; letter-spacing: 0.04em;
+      background: linear-gradient(135deg, var(--teal), var(--purple));
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
 
     /* ── score rows ── */
     .score-list { display: flex; flex-direction: column; gap: 8px; }
-    .score-row  { display: flex; align-items: center; gap: 10px; background: rgba(255,255,255,0.04); border-radius: 10px; padding: 10px 12px; }
+    .score-row  { display: flex; align-items: center; gap: 10px; background: rgba(123,97,255,0.06); border: 1px solid rgba(123,97,255,0.12); border-radius: 12px; padding: 10px 12px; }
     .score-row .name       { flex: 1; font-weight: 600; font-size: 0.95rem; }
-    .score-row .pts-round  { font-size: 1.15rem; font-weight: 800; min-width: 44px; text-align: right; }
+    .score-row .pts-round  { font-size: 1.15rem; font-weight: 800; min-width: 44px; text-align: right;
+      background: linear-gradient(135deg, var(--teal), var(--purple));
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
     .score-row .pts-total  { font-size: 0.8rem; color: var(--dim); min-width: 60px; text-align: right; }
 
     /* ── leaderboard ── */
-    .lb-row { display: flex; align-items: center; gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--border); }
+    .lb-row { display: flex; align-items: center; gap: 12px; padding: 10px 0; border-bottom: 1px solid rgba(78,205,196,0.1); }
     .lb-row:last-child { border-bottom: none; }
     .lb-rank  { width: 28px; font-size: 1.3rem; text-align: center; }
     .lb-name  { flex: 1; font-weight: 600; }
-    .lb-score { font-size: 1.4rem; font-weight: 800; color: var(--gold); }
+    .lb-score {
+      font-size: 1.4rem; font-weight: 800;
+      background: linear-gradient(135deg, var(--teal), var(--purple));
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+    }
 
     /* ── pos badge ── */
     #pos-badge { text-align: center; font-size: 0.85rem; color: var(--dim); min-height: 20px; margin: 6px 0 10px; transition: color 0.2s; }
     #pos-badge.active { color: var(--teal); font-weight: 600; }
 
     /* ── progress bar ── */
-    .progress-wrap { background: rgba(255,255,255,0.08); border-radius: 50px; height: 8px; overflow: hidden; margin: 10px 0; }
-    .progress-fill { height: 100%; border-radius: 50px; background: linear-gradient(90deg, var(--teal), #7b61ff); transition: width 0.4s ease; }
+    .progress-wrap { background: rgba(255,255,255,0.07); border-radius: 50px; height: 6px; overflow: hidden; margin: 10px 0; }
+    .progress-fill { height: 100%; border-radius: 50px; background: linear-gradient(90deg, var(--teal), var(--purple)); transition: width 0.4s ease; }
 
     /* ── waiting screen ── */
     .waiting-card { text-align: center; padding: 32px 20px; }
@@ -156,14 +182,14 @@
     .pulse-ring:nth-child(3) { animation-delay: 1.2s; }
 
     /* ── connection banner ── */
-    #conn-banner { display: none; position: fixed; top: 0; left: 0; right: 0; background: #e05555; color: #fff; text-align: center; padding: 8px; font-size: 0.85rem; font-weight: 600; z-index: 999; }
+    #conn-banner { display: none; position: fixed; top: 0; left: 0; right: 0; background: linear-gradient(90deg, #e05555, #c03030); color: #fff; text-align: center; padding: 8px; font-size: 0.85rem; font-weight: 600; z-index: 999; }
 
     /* ── err ── */
     .err { color: var(--coral); font-size: 0.85rem; text-align: center; min-height: 20px; margin-top: 6px; }
 
     /* ── OR divider ── */
     .divider { display: flex; align-items: center; gap: 12px; margin: 16px 0; color: var(--dim); font-size: 0.85rem; }
-    .divider::before, .divider::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+    .divider::before, .divider::after { content: ''; flex: 1; height: 1px; background: linear-gradient(90deg, transparent, var(--border), transparent); }
 
     /* ── fade in ── */
     @keyframes fadeUp { from { opacity:0; transform:translateY(10px); } to { opacity:1; transform:translateY(0); } }
@@ -210,17 +236,17 @@ function buildDial({ showTarget, target, guesses, spectrum, players }) {
 
   // Background band
   const bg = bgArcPath(IR, OR);
-  s += `<path d="${bg}" fill="#1a2a50" stroke="#2a3f70" stroke-width="1"/>`;
+  s += `<path d="${bg}" fill="#13102a" stroke="rgba(78,205,196,0.2)" stroke-width="1"/>`;
 
   // Scoring zones
   if (showTarget && target != null) {
     const t = target;
     [
-      { from: t-0.14, to: t-0.09, pts: 2, fill: '#d4a93a', op: 0.80 },
-      { from: t-0.09, to: t-0.04, pts: 3, fill: '#6dbe72', op: 0.85 },
-      { from: t-0.04, to: t+0.04, pts: 4, fill: '#4ecdc4', op: 0.95 },
-      { from: t+0.04, to: t+0.09, pts: 3, fill: '#6dbe72', op: 0.85 },
-      { from: t+0.09, to: t+0.14, pts: 2, fill: '#d4a93a', op: 0.80 },
+      { from: t-0.14, to: t-0.09, pts: 2, fill: '#7b61ff', op: 0.55 },
+      { from: t-0.09, to: t-0.04, pts: 3, fill: '#5e9eff', op: 0.70 },
+      { from: t-0.04, to: t+0.04, pts: 4, fill: '#4ecdc4', op: 0.90 },
+      { from: t+0.04, to: t+0.09, pts: 3, fill: '#5e9eff', op: 0.70 },
+      { from: t+0.09, to: t+0.14, pts: 2, fill: '#7b61ff', op: 0.55 },
     ].forEach(z => {
       const ss = Math.max(0.01, z.from), ee = Math.min(0.99, z.to);
       if (ss >= ee) return;
@@ -231,10 +257,10 @@ function buildDial({ showTarget, target, guesses, spectrum, players }) {
   }
 
   // Arc outline + ticks
-  s += `<path d="${bg}" fill="none" stroke="rgba(255,255,255,0.12)" stroke-width="1.5"/>`;
+  s += `<path d="${bg}" fill="none" stroke="rgba(78,205,196,0.25)" stroke-width="1.5"/>`;
   for (let i = 1; i < 10; i++) {
     const inner = pt(OR-10, px(i/10)), outer = pt(OR-2, px(i/10));
-    s += `<line x1="${f(inner.x)}" y1="${f(inner.y)}" x2="${f(outer.x)}" y2="${f(outer.y)}" stroke="rgba(255,255,255,0.15)" stroke-width="1"/>`;
+    s += `<line x1="${f(inner.x)}" y1="${f(inner.y)}" x2="${f(outer.x)}" y2="${f(outer.y)}" stroke="rgba(78,205,196,0.2)" stroke-width="1"/>`;
   }
 
   // Existing guesses (shown on reveal)
@@ -249,16 +275,16 @@ function buildDial({ showTarget, target, guesses, spectrum, players }) {
   }
 
   // Hub (data-hub so we can insert needles before it)
-  s += `<circle data-hub="1" cx="${CX}" cy="${CY}" r="20" fill="#0e1525" stroke="rgba(255,255,255,0.2)" stroke-width="1.5"/>`;
-  s += `<circle cx="${CX}" cy="${CY}" r="7" fill="rgba(255,255,255,0.15)"/>`;
+  s += `<circle data-hub="1" cx="${CX}" cy="${CY}" r="20" fill="#0d0b1a" stroke="rgba(78,205,196,0.35)" stroke-width="1.5"/>`;
+  s += `<circle cx="${CX}" cy="${CY}" r="7" fill="rgba(78,205,196,0.2)"/>`;
 
   // Baseline
   const bl = pt(OR,180), br = pt(OR,0);
-  s += `<line x1="${f(bl.x)}" y1="${f(bl.y)}" x2="${f(br.x)}" y2="${f(br.y)}" stroke="rgba(255,255,255,0.15)" stroke-width="1"/>`;
+  s += `<line x1="${f(bl.x)}" y1="${f(bl.y)}" x2="${f(br.x)}" y2="${f(br.y)}" stroke="rgba(78,205,196,0.15)" stroke-width="1"/>`;
 
   // Spectrum labels
-  s += `<text x="14" y="${CY+22}" fill="#6aacff" font-size="13" font-weight="bold" font-family="system-ui">${esc(spectrum.left)}</text>`;
-  s += `<text x="${VW-14}" y="${CY+22}" text-anchor="end" fill="#ff8c69" font-size="13" font-weight="bold" font-family="system-ui">${esc(spectrum.right)}</text>`;
+  s += `<text x="14" y="${CY+22}" fill="#4ecdc4" font-size="13" font-weight="bold" font-family="system-ui">${esc(spectrum.left)}</text>`;
+  s += `<text x="${VW-14}" y="${CY+22}" text-anchor="end" fill="#7b61ff" font-size="13" font-weight="bold" font-family="system-ui">${esc(spectrum.right)}</text>`;
 
   s += '</svg>';
   return s;
