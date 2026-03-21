@@ -167,17 +167,29 @@
     .progress-fill { height: 100%; border-radius: 50px; background: linear-gradient(90deg, var(--teal), var(--purple)); transition: width 0.4s ease; }
 
     /* ── waiting screen ── */
-    .waiting-card { text-align: center; padding: 32px 20px; }
-    .waiting-icon { font-size: 3rem; margin-bottom: 14px; }
+    .waiting-card { text-align: center; padding: 28px 20px; }
 
-    /* ── pulse rings animation ── */
-    .pulse-wrap { display: flex; justify-content: center; align-items: center; margin-bottom: 18px; }
-    .pulse-svg { width: 96px; height: 96px; overflow: visible; }
-    @keyframes ring-pulse {
-      0%   { r: 6;  opacity: 0.9; }
-      100% { r: 32; opacity: 0; }
+    /* ── pulse rings animation (pure CSS — reliable cross-browser) ── */
+    .pulse-wrap   { display: flex; justify-content: center; align-items: center; margin-bottom: 20px; }
+    .pulse-rings  { position: relative; width: 120px; height: 120px; display: flex; align-items: center; justify-content: center; }
+    .pulse-center {
+      position: absolute; width: 26px; height: 26px; border-radius: 50%; z-index: 2;
+      background: radial-gradient(circle at 38% 32%, rgba(255,255,255,0.95) 0%, #4ecdc4 40%, #7b61ff 100%);
+      box-shadow: 0 0 14px rgba(78,205,196,0.95), 0 0 30px rgba(78,205,196,0.55), 0 0 56px rgba(123,97,255,0.35);
     }
-    .pulse-ring { animation: ring-pulse 2s ease-out infinite; fill: none; stroke: url(#pulse-grad); stroke-width: 2; }
+    .pulse-ring {
+      position: absolute; border-radius: 50%;
+      border: 1.5px solid rgba(78,205,196,0.7);
+      animation: ring-expand 2.4s ease-out infinite;
+    }
+    .pulse-ring:nth-child(2) { animation-delay: 0s; }
+    .pulse-ring:nth-child(3) { animation-delay: 0.8s; }
+    .pulse-ring:nth-child(4) { animation-delay: 1.6s; }
+    @keyframes ring-expand {
+      0%   { width: 26px; height: 26px; opacity: 0.85; border-color: rgba(78,205,196,0.8); }
+      65%  { border-color: rgba(123,97,255,0.35); }
+      100% { width: 118px; height: 118px; opacity: 0; border-color: rgba(123,97,255,0); }
+    }
 
     /* ── connection banner ── */
     #conn-banner { display: none; position: fixed; top: 0; left: 0; right: 0; background: linear-gradient(90deg, #e05555, #c03030); color: #fff; text-align: center; padding: 8px; font-size: 0.85rem; font-weight: 600; z-index: 999; }
@@ -227,18 +239,19 @@ const COLORS = ['#FF6B6B','#4ECDC4','#FFD93D','#7B61FF','#FF8C42','#A8E6CF','#F7
 
 function pulseIcon() {
   return `<div class="pulse-wrap">
-    <svg class="pulse-svg" viewBox="0 0 72 72" xmlns="http://www.w3.org/2000/svg">
-      <defs>
-        <linearGradient id="pulse-grad" x1="0" y1="0" x2="1" y2="1">
-          <stop offset="0%" stop-color="#4ecdc4"/>
-          <stop offset="100%" stop-color="#7b61ff"/>
-        </linearGradient>
-      </defs>
-      <circle cx="36" cy="36" r="5" fill="url(#pulse-grad)"/>
-      <circle class="pulse-ring" cx="36" cy="36" r="6"/>
-      <circle class="pulse-ring" cx="36" cy="36" r="6" style="animation-delay:0.65s"/>
-      <circle class="pulse-ring" cx="36" cy="36" r="6" style="animation-delay:1.3s"/>
-    </svg>
+    <div class="pulse-rings">
+      <div class="pulse-center"></div>
+      <div class="pulse-ring"></div>
+      <div class="pulse-ring"></div>
+      <div class="pulse-ring"></div>
+    </div>
+  </div>`;
+}
+
+function waitingCard(msg) {
+  return `<div class="card waiting-card">
+    ${pulseIcon()}
+    <div style="color:var(--dim);font-size:0.9rem">${msg}</div>
   </div>`;
 }
 
@@ -708,7 +721,7 @@ function renderRoundStart() {
 
     ${S.isHost
       ? `<button class="btn btn-primary" onclick="advanceRound()">Start Round →</button>`
-      : `<div class="card waiting-card" style="padding:16px;text-align:center;color:var(--dim);font-size:0.9rem">Waiting for host to start the round…</div>`
+      : waitingCard('Waiting for host to start the round…')
     }
   `;
 }
@@ -799,6 +812,11 @@ function renderGuessing() {
       <div class="round-label">Round ${S.roundNum} · Waiting for Guesses</div>
       <div class="phase-title">Your clue is out there…</div>
 
+      <div class="card waiting-card" style="padding:20px">
+        ${pulseIcon()}
+        <div style="color:var(--dim);font-size:0.9rem">Waiting for players to guess…</div>
+      </div>
+
       <div class="clue-box">
         <div class="clue-label">Your Clue</div>
         <div class="clue-text">"${esc(S.clue)}"</div>
@@ -834,6 +852,11 @@ function renderGuessing() {
     app.innerHTML = `
       <div class="round-label">Round ${S.roundNum} · Waiting</div>
       <div class="phase-title">Locked in!</div>
+
+      <div class="card waiting-card" style="padding:20px">
+        ${pulseIcon()}
+        <div style="color:var(--dim);font-size:0.9rem">Waiting for others to guess…</div>
+      </div>
 
       <div class="clue-box">
         <div class="clue-label">The Clue</div>
@@ -967,7 +990,7 @@ function renderReveal() {
       ? `<button class="btn btn-primary" onclick="nextRound()">
            ${S.roundNum >= S.totalRounds ? 'See Final Results →' : `Next Round (${S.totalRounds - S.roundNum} left) →`}
          </button>`
-      : `<div class="card" style="text-align:center;padding:14px;color:var(--dim);font-size:0.9rem">Waiting for host to continue…</div>`
+      : waitingCard('Waiting for host to continue…')
     }
   `;
 }
@@ -1021,7 +1044,7 @@ function renderGameOver() {
     ${S.isHost ? `
       <button class="btn btn-primary" onclick="playAgain()">Play Again (Same Players)</button>
       <button class="btn btn-ghost" onclick="newGame()" style="margin-top:8px">New Game (Change Players)</button>
-    ` : `<div class="card" style="text-align:center;padding:14px;color:var(--dim);font-size:0.9rem">Waiting for host…</div>`}
+    ` : waitingCard('Waiting for host…')}
   `;
 
   if (isWinner) launchFireworks();
