@@ -144,6 +144,24 @@
     .waiting-card { text-align: center; padding: 32px 20px; }
     .waiting-icon { font-size: 3rem; margin-bottom: 14px; }
 
+    /* ── hourglass animation ── */
+    .hourglass-wrap { display: flex; justify-content: center; margin-bottom: 18px; }
+    .hourglass-svg { width: 52px; height: 52px; }
+    @keyframes hg-flip { 0%,45%   { transform: rotate(0deg); }
+                         50%,95%  { transform: rotate(180deg); }
+                         100%     { transform: rotate(180deg); } }
+    @keyframes hg-sand-top { 0%   { transform: scaleY(1); transform-origin: bottom; }
+                              45%  { transform: scaleY(0); transform-origin: bottom; }
+                              50%  { transform: scaleY(0); transform-origin: top; }
+                              100% { transform: scaleY(1); transform-origin: top; } }
+    @keyframes hg-sand-bot { 0%   { transform: scaleY(0); transform-origin: top; }
+                              45%  { transform: scaleY(1); transform-origin: top; }
+                              50%  { transform: scaleY(1); transform-origin: bottom; }
+                              100% { transform: scaleY(0); transform-origin: bottom; } }
+    .hg-body   { animation: hg-flip 2.4s ease-in-out infinite; transform-origin: center; }
+    .hg-top    { animation: hg-sand-top 2.4s ease-in-out infinite; }
+    .hg-bottom { animation: hg-sand-bot 2.4s ease-in-out infinite; }
+
     /* ── connection banner ── */
     #conn-banner { display: none; position: fixed; top: 0; left: 0; right: 0; background: #e05555; color: #fff; text-align: center; padding: 8px; font-size: 0.85rem; font-weight: 600; z-index: 999; }
 
@@ -689,7 +707,34 @@ function renderClueEntry() {
       <div class="phase-title">Waiting…</div>
 
       <div class="card waiting-card">
-        <div class="waiting-icon">🤔</div>
+        <div class="hourglass-wrap">
+          <svg class="hourglass-svg" viewBox="0 0 52 52" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+              <linearGradient id="hg-grad" x1="0" y1="0" x2="1" y2="1">
+                <stop offset="0%" stop-color="#4ecdc4"/>
+                <stop offset="100%" stop-color="#7b61ff"/>
+              </linearGradient>
+              <clipPath id="hg-top-clip"><rect x="13" y="6"  width="26" height="18"/></clipPath>
+              <clipPath id="hg-bot-clip"><rect x="13" y="28" width="26" height="18"/></clipPath>
+            </defs>
+            <g class="hg-body">
+              <!-- frame -->
+              <rect x="11" y="4"  width="30" height="4" rx="2" fill="url(#hg-grad)"/>
+              <rect x="11" y="44" width="30" height="4" rx="2" fill="url(#hg-grad)"/>
+              <!-- glass outline -->
+              <path d="M14 8 L26 26 L38 8Z" fill="none" stroke="url(#hg-grad)" stroke-width="1.5"/>
+              <path d="M14 44L26 26 L38 44Z" fill="none" stroke="url(#hg-grad)" stroke-width="1.5"/>
+              <!-- top sand -->
+              <g clip-path="url(#hg-top-clip)">
+                <path class="hg-top" d="M14.5 8.5 L26 25.5 L37.5 8.5Z" fill="url(#hg-grad)" opacity="0.7"/>
+              </g>
+              <!-- bottom sand -->
+              <g clip-path="url(#hg-bot-clip)">
+                <path class="hg-bottom" d="M14.5 43.5L26 26.5 L37.5 43.5Z" fill="url(#hg-grad)" opacity="0.7"/>
+              </g>
+            </g>
+          </svg>
+        </div>
         <div style="font-size:1.1rem;font-weight:700;margin-bottom:6px">${esc(S.clueGiverName)} is thinking…</div>
         <p style="color:var(--dim);font-size:0.88rem">Think about the spectrum while you wait.</p>
       </div>
