@@ -146,7 +146,7 @@
 
     /* ── pulse rings animation ── */
     .pulse-wrap { display: flex; justify-content: center; align-items: center; margin-bottom: 18px; }
-    .pulse-svg { width: 72px; height: 72px; overflow: visible; }
+    .pulse-svg { width: 96px; height: 96px; overflow: visible; }
     @keyframes ring-pulse {
       0%   { r: 6;  opacity: 0.9; }
       100% { r: 32; opacity: 0; }
@@ -566,7 +566,20 @@ function renderLobby() {
       Start Game (${S.players.length} players)
     </button>` : `
     <div class="card waiting-card" style="padding:20px">
-      <div class="waiting-icon">⏳</div>
+      <div class="pulse-wrap">
+          <svg class="pulse-svg" viewBox="0 0 72 72" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+              <linearGradient id="pulse-grad2" x1="0" y1="0" x2="1" y2="1">
+                <stop offset="0%" stop-color="#4ecdc4"/>
+                <stop offset="100%" stop-color="#7b61ff"/>
+              </linearGradient>
+            </defs>
+            <circle cx="36" cy="36" r="5" fill="url(#pulse-grad2)"/>
+            <circle class="pulse-ring" cx="36" cy="36" r="6" stroke="url(#pulse-grad2)"/>
+            <circle class="pulse-ring" cx="36" cy="36" r="6" stroke="url(#pulse-grad2)"/>
+            <circle class="pulse-ring" cx="36" cy="36" r="6" stroke="url(#pulse-grad2)"/>
+          </svg>
+        </div>
       <div style="color:var(--dim)">Waiting for the host to start…</div>
     </div>`;
 
