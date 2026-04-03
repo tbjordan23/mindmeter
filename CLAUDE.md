@@ -1,11 +1,15 @@
-# Project Name
+# Project Name: MindMeter Game
+
+# Project Description: Mult-player game inspired by the game called Wavelength
+
+# Owner: Travis Jordan
 
 ## GitHub Repo
 https://github.com/tbjordan23/mindmeter
 
 ## Stack
 - Vite + React
-- Deployed on GitHub Pages
+- Deployed on Railway
 
 ## Commands
 - `npm run dev` — local dev server
